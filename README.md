@@ -1,6 +1,6 @@
 # Command line manager
 
-## Instalation
+## Installation
 
 Just drag and include the __cmd.hpp__ to your c++ project !
 

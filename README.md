@@ -4,7 +4,7 @@
 
 Just drag and include the __cmd.hpp__ to your c++ project !
 
-## Usages
+## Usage
 
 ```c++
 // declare your cmd function

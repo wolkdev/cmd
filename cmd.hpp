@@ -19,6 +19,7 @@ class cmd
     struct arg;
     struct data;
     typedef void (*function)(const std::vector<arg>&);
+    typedef std::vector<std::vector<std::string>> option_container;
 
     struct arg
     {
@@ -74,7 +75,7 @@ class cmd
     {
         std::string string;
         std::string help;
-        std::vector<std::vector<std::string>> options;
+        option_container options;
         function callback = nullptr;
         int maxArgCount = -1;
         int minArgCount = 0;
@@ -86,8 +87,9 @@ class cmd
             function _callback,
             int _minArgCount,
             int _maxArgCount,
-            std::vector<std::vector<std::string>>&& _options,
-            std::string&& _help) :
+            option_container&& _options,
+            std::string&& _help)
+            :
             string(_string),
             callback(_callback),
             minArgCount(_minArgCount),

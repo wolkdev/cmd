@@ -23,8 +23,6 @@ COMMAND(add, 1, 1, { { "local", "global" }, { "header-only" } }, "")
     }
 }
 
-// initialize and execute commands
-cmd commander;
-commander.add(status_cmd);
-commander.execute(command, argc, argv);
+// simply execute commands
+cmd::execute(command, argc, argv);
 ```

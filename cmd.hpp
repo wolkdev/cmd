@@ -1,21 +1,22 @@
 #ifndef CMD__HPP
 #define CMD__HPP
 
+#include <stdexcept>
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <utility>
-
-#define COMMAND(name, min, max, options, help) \
-void name ## _cmd_function(const std::vector<cmd::arg>& _args); \
-cmd::data name ## _cmd(#name, &name ## _cmd_function, min, max, options, help); \
-void name ## _cmd_function(const std::vector<cmd::arg>& _args)
+#include <vector>
 
 #define INFINITE_ARGS -1
 
-class cmd
+#define COMMAND(name, min, max, options, help)                                      \
+void name ## _cmd(const std::vector<cmd::arg>& _args);                              \
+int name ## _cmd_index = cmd::add_command(cmd::data(                                \
+    #name, &name ## _cmd, min, max, options, help));                                \
+void name ## _cmd(const std::vector<cmd::arg>& _args)
+
+namespace cmd
 {
-    public:
     struct arg;
     struct data;
     typedef void (*function)(const std::vector<arg>&);
@@ -115,11 +116,11 @@ class cmd
 
             if (_args.size() < (unsigned)minArgCount)
             {
-                throw std::exception("Not enough arguments !");
+                throw std::runtime_error("Not enough arguments !");
             }
             else if (maxArgCount > 0 && _args.size() > (unsigned)maxArgCount)
             {
-                throw std::exception("Too much arguments !");
+                throw std::runtime_error("Too much arguments !");
             }
 
             for (size_t i = 0; i < _args.size(); i++)
@@ -146,7 +147,7 @@ class cmd
                                         + options[k][l] + "\" and \"" + matched
                                         + "\"";
 
-                                    throw std::exception(message.c_str());
+                                    throw std::runtime_error(message.c_str());
                                 }
 
                                 match = true;
@@ -160,45 +161,21 @@ class cmd
                         std::string message = "No matching options for \""
                             + _args[i].options[j].string + "\"";
 
-                        throw std::exception(message.c_str());
+                        throw std::runtime_error(message.c_str());
                     }
                 }
             }
         }
     };
 
-    private:
-    std::unordered_map<std::string, data> cmds;
+    static std::vector<data> commands;
 
-    public:
-    void add(const data& _cmd) { cmds[_cmd.string] = data(_cmd); }
-
-    void execute(const std::string& _command, int _argc, char const* _argv[])
+    static int add_command(data&& _data)
     {
-        if (cmds.find(_command) != cmds.end())
-        {
-            try
-            {
-                const std::vector<arg>& args = parse_args(_argc, _argv);
-                cmds[_command].check_args(args);
-
-                if (cmds[_command].should_display_help(args))
-                {
-                    cmds[_command].display_help();
-                }
-                else
-                {
-                    cmds[_command].callback(args);
-                }
-            }
-            catch (const std::exception& e)
-            {
-                std::cerr << e.what() << std::endl;
-            }
-        }
+        commands.push_back(std::move(_data));
+        return commands.size() - 1;
     }
 
-    private:
     static bool is_option(std::string _str, int& _index)
     {
         if (_str.size() > 0)
@@ -258,6 +235,51 @@ class cmd
         }
 
         return args;
+    }
+
+    static bool find_command(const std::string& _command, unsigned int& _index)
+    {
+        for (unsigned int i = 0; i < commands.size(); i++)
+        {
+            if (commands[i].string == _command)
+            {
+                _index = i;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static void execute(const std::string& _command, int _argc, char const* _argv[])
+    {
+        unsigned int index;
+
+        if (find_command(_command, index))
+        {
+            try
+            {
+                const std::vector<arg>& args = parse_args(_argc, _argv);
+                commands[index].check_args(args);
+
+                if (commands[index].should_display_help(args))
+                {
+                    commands[index].display_help();
+                }
+                else
+                {
+                    commands[index].callback(args);
+                }
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+        else
+        {
+            std::cerr << "unknown command : " << _command << std::endl;
+        }
     }
 };
 
